@@ -35,6 +35,10 @@ resource "aws_cloudfront_distribution" "frontend_distribution" {
     }
   }
 
+  invalidation {
+    path = "/*"
+  }
+
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = "index.html"
@@ -67,6 +71,8 @@ resource "aws_cloudfront_distribution" "frontend_distribution" {
       restriction_type = "none"
     }
   }
+
+  
 
   tags = {
     Name = "Frontend Distribution"

@@ -103,14 +103,13 @@ resource "aws_s3_bucket_policy" "frontend_policy" {
   })
 }
 
-# Lambda Function for Backend
 resource "aws_lambda_function" "backend_lambda" {
   function_name    = "file-sharing-backend"
   runtime          = "nodejs14.x"
   handler          = "handler.handler"
   filename         = "${path.module}/app/backend.zip"
-  role             = aws_iam_role.lambda_exec_role.arn
   source_code_hash = filebase64sha256("${path.module}/app/backend.zip")
+  role             = aws_iam_role.lambda_exec_role.arn
 
   tags = {
     Name = "Backend Lambda Function"

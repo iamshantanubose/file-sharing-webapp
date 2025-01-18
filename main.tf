@@ -10,17 +10,26 @@ terraform {
   }
 }
 
+# Default VPC
+data "aws_vpc" "default" {
+  default = true
+}
+
 # S3 Bucket for Frontend Hosting
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket        = "file-sharing-home-bucket"
   force_destroy = true
 
-  website {
-    index_document = "index.html"
-  }
-
   tags = {
     Name = "Home File Sharing Bucket"
+  }
+}
+
+resource "aws_s3_bucket_website_configuration" "frontend_website" {
+  bucket = aws_s3_bucket.frontend_bucket.id
+
+  index_document {
+    suffix = "index.html"
   }
 }
 
@@ -52,10 +61,10 @@ resource "aws_s3_bucket_policy" "frontend_policy" {
 
 # EC2 Instance for Backend
 resource "aws_instance" "file_sharing_instance" {
-  ami           = data.aws_ami.amazon_linux.id
-  instance_type = "t2.micro"
-  key_name      = "your-ssh-key" # Replace with your SSH key name
-  security_group_ids = [aws_security_group.file_sharing_sg.id]
+  ami                   = data.aws_ami.amazon_linux.id
+  instance_type         = "t2.micro"
+  key_name              = "your-ssh-key" # Replace with your SSH key name
+  vpc_security_group_ids = [aws_security_group.file_sharing_sg.id]
 
   user_data = <<-EOF
               #!/bin/bash
@@ -82,7 +91,7 @@ resource "aws_instance" "file_sharing_instance" {
 resource "aws_security_group" "file_sharing_sg" {
   name        = "file-sharing-sg"
   description = "Allow HTTP and SSH access"
-  vpc_id      = aws_default_vpc.default.id
+  vpc_id      = data.aws_vpc.default.id
 
   ingress {
     from_port   = 22
@@ -118,7 +127,7 @@ data "aws_ami" "amazon_linux" {
 }
 
 output "s3_website_url" {
-  value = aws_s3_bucket.frontend_bucket.website_endpoint
+  value = aws_s3_bucket_website_configuration.frontend_website.website_endpoint
 }
 
 output "ec2_public_ip" {

@@ -46,5 +46,4 @@ jobs:
 
     - name: Output Application URL
       run: |
-        echo "Application deployed successfully!"
-        terraform output app_url
+        echo "Application deployed successfully! Public IP:" $(terraform output instance_public_ip)

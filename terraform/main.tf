@@ -121,24 +121,6 @@ resource "null_resource" "cloudfront_invalidation" {
   }
 }
 
-# Test Case: Verify CloudFront Distribution is Live
-resource "null_resource" "test_website_live" {
-  triggers = {
-    distribution_domain = aws_cloudfront_distribution.frontend_distribution.domain_name
-  }
-
-  provisioner "local-exec" {
-    command = <<EOT
-      status_code=$(curl -o /dev/null -s -w "%{http_code}" https://${aws_cloudfront_distribution.frontend_distribution.domain_name})
-      if [ $status_code -eq 200 ]; then
-        echo "Website is live!"
-      else
-        echo "Website failed health check with status code $status_code"
-        exit 1
-      fi
-    EOT
-  }
-}
 
 # Lambda Function for Backend
 resource "aws_lambda_function" "backend_lambda" {

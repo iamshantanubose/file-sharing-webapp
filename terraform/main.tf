@@ -4,7 +4,6 @@ provider "aws" {
   region = "us-east-1"
 }
 
-
 # S3 Bucket for Frontend Hosting
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket        = "file-sharing-webapp-bucket-${random_string.bucket_suffix.result}"
@@ -33,10 +32,6 @@ resource "aws_cloudfront_distribution" "frontend_distribution" {
     s3_origin_config {
       origin_access_identity = aws_cloudfront_origin_access_identity.oai.cloudfront_access_identity_path
     }
-  }
-
-  invalidation {
-    path = "/*"
   }
 
   enabled             = true
@@ -72,8 +67,6 @@ resource "aws_cloudfront_distribution" "frontend_distribution" {
     }
   }
 
-  
-
   tags = {
     Name = "Frontend Distribution"
   }
@@ -104,6 +97,14 @@ resource "aws_s3_bucket_policy" "frontend_policy" {
   })
 }
 
+# CloudFront Distribution Invalidation
+resource "aws_cloudfront_distribution_invalidation" "invalidation" {
+  distribution_id = aws_cloudfront_distribution.frontend_distribution.id
+
+  paths = [
+    "/*"
+  ]
+}
 
 # Lambda Function for Backend
 resource "aws_lambda_function" "backend_lambda" {
@@ -183,6 +184,7 @@ resource "aws_api_gateway_stage" "api_stage" {
   deployment_id = aws_api_gateway_deployment.api_deployment.id
 }
 
+# Upload index.html to S3 Bucket
 resource "aws_s3_object" "index_file" {
   bucket = aws_s3_bucket.frontend_bucket.id
   key    = "index.html"

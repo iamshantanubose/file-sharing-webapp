@@ -1,4 +1,5 @@
-name: CI/CD Pipeline for Terraform Deployment
+// --- File: .github/workflows/ci-cd.yml ---
+name: CI/CD Pipeline for File Sharing App
 
 on:
   push:
@@ -6,15 +7,26 @@ on:
       - main
 
 jobs:
-  terraform-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Check out the code
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    # Step 2: Configure AWS Credentials
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 14
+
+    - name: Install Dependencies
+      run: |
+        npm install
+
+    - name: Test Application
+      run: |
+        echo "Running tests..." # Add real tests here if needed
+
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
@@ -22,32 +34,18 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    # Step 3: Install dependencies and package Lambda
-    - name: Install Dependencies and Package Lambda
-      run: |
-        mkdir -p terraform/app          # Create the directory if it doesn't exist
-        cd app
-        npm install                     # Install Lambda dependencies
-        zip -r backend.zip handler.js node_modules
-        mv backend.zip ../terraform/app/backend.zip
-
-    # Step 4: Set up Terraform
-    - name: Set up Terraform
+    - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
       with:
         terraform_version: 1.4.6
 
-    # Step 5: Terraform Init
     - name: Terraform Init
       run: terraform init
-      working-directory: ./terraform
 
-    # Step 6: Terraform Plan
-    - name: Terraform Plan
-      run: terraform plan
-      working-directory: ./terraform
-
-    # Step 7: Terraform Apply
     - name: Terraform Apply
       run: terraform apply -auto-approve
-      working-directory: ./terraform
+
+    - name: Output Application URL
+      run: |
+        echo "Application deployed successfully!"
+        terraform output app_url

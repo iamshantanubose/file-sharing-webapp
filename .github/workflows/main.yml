@@ -63,11 +63,11 @@ jobs:
     - name: Terraform Apply
       run: terraform apply -auto-approve
 
+    - name: Save Terraform Output to File
+      run: terraform output -raw s3_website_url > s3_website_url.txt
+
     - name: Set S3 Website URL
-      run: |
-        URL=$(terraform output s3_website_url | grep -Eo 'http[s]?://[^ ]+' || terraform output -raw s3_website_url)
-        echo "WEBSITE_URL=$URL" >> $GITHUB_ENV
-    
+      run: echo "WEBSITE_URL=$(cat s3_website_url.txt)" >> $GITHUB_ENV
 
     - name: Output Application Details
       run: |

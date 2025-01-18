@@ -4,6 +4,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
+
 # S3 Bucket for Frontend Hosting
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket        = "file-sharing-webapp-bucket-${random_string.bucket_suffix.result}"
@@ -100,7 +101,7 @@ resource "aws_s3_bucket_policy" "frontend_policy" {
 # Lambda Function for Backend
 resource "aws_lambda_function" "backend_lambda" {
   function_name    = "file-sharing-backend"
-  runtime          = "nodejs18.x"  # Updated runtime
+  runtime          = "nodejs18.x"
   handler          = "handler.handler"
   filename         = "${path.module}/app/backend.zip"
   source_code_hash = filebase64sha256("${path.module}/app/backend.zip")

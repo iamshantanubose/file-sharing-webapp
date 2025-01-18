@@ -4,7 +4,6 @@ provider "aws" {
   region = "us-east-1"
 }
 
-
 # S3 Bucket for Frontend Hosting
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket        = "file-sharing-webapp-bucket-${random_string.bucket_suffix.result}"
@@ -98,6 +97,49 @@ resource "aws_s3_bucket_policy" "frontend_policy" {
   })
 }
 
+# Upload index.html to S3 Bucket
+resource "aws_s3_object" "index_file" {
+  bucket = aws_s3_bucket.frontend_bucket.id
+  key    = "index.html"
+  source = "${path.module}/app/index.html"
+  content_type = "text/html"
+}
+
+# Null Resource for CloudFront Invalidation
+resource "null_resource" "cloudfront_invalidation" {
+  triggers = {
+    distribution_id = aws_cloudfront_distribution.frontend_distribution.id
+    invalidation_id = timestamp()
+  }
+
+  provisioner "local-exec" {
+    command = <<EOT
+      aws cloudfront create-invalidation \
+        --distribution-id ${aws_cloudfront_distribution.frontend_distribution.id} \
+        --paths "/*"
+    EOT
+  }
+}
+
+# Test Case: Verify CloudFront Distribution is Live
+resource "null_resource" "test_website_live" {
+  triggers = {
+    distribution_domain = aws_cloudfront_distribution.frontend_distribution.domain_name
+  }
+
+  provisioner "local-exec" {
+    command = <<EOT
+      status_code=$(curl -o /dev/null -s -w "%{http_code}" https://${aws_cloudfront_distribution.frontend_distribution.domain_name})
+      if [ $status_code -eq 200 ]; then
+        echo "Website is live!"
+      else
+        echo "Website failed health check with status code $status_code"
+        exit 1
+      fi
+    EOT
+  }
+}
+
 # Lambda Function for Backend
 resource "aws_lambda_function" "backend_lambda" {
   function_name    = "file-sharing-backend"
@@ -174,28 +216,4 @@ resource "aws_api_gateway_stage" "api_stage" {
   stage_name    = "prod"
   rest_api_id   = aws_api_gateway_rest_api.backend_api.id
   deployment_id = aws_api_gateway_deployment.api_deployment.id
-}
-
-# Upload index.html to S3 Bucket
-resource "aws_s3_object" "index_file" {
-  bucket = aws_s3_bucket.frontend_bucket.id
-  key    = "index.html"
-  source = "${path.module}/app/index.html"
-  content_type = "text/html"
-}
-
-# Null Resource for CloudFront Invalidation
-resource "null_resource" "cloudfront_invalidation" {
-  triggers = {
-    distribution_id = aws_cloudfront_distribution.frontend_distribution.id
-    invalidation_id = timestamp()
-  }
-
-  provisioner "local-exec" {
-    command = <<EOT
-      aws cloudfront create-invalidation \
-        --distribution-id ${aws_cloudfront_distribution.frontend_distribution.id} \
-        --paths "/*"
-    EOT
-  }
 }

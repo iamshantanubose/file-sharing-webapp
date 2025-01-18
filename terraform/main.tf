@@ -4,6 +4,14 @@ provider "aws" {
   region = "us-east-1"
 }
 
+terraform {
+  backend "s3" {
+    bucket         = "terraform-state-storage-shaan"
+    key            = "file-sharing-webapp/terraform.tfstate"
+    region         = "us-east-1"
+  }
+}
+
 # S3 Bucket for Frontend Hosting
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket        = "file-sharing-webapp-bucket-${random_string.bucket_suffix.result}"
@@ -12,12 +20,6 @@ resource "aws_s3_bucket" "frontend_bucket" {
   tags = {
     Name = "Frontend Hosting Bucket"
   }
-}
-
-# ACL for S3 Bucket
-resource "aws_s3_bucket_acl" "frontend_bucket_acl" {
-  bucket = aws_s3_bucket.frontend_bucket.id
-  acl    = "private"
 }
 
 # Random String for Bucket Name Suffix
@@ -103,9 +105,10 @@ resource "aws_s3_bucket_policy" "frontend_policy" {
   })
 }
 
+# Lambda Function for Backend
 resource "aws_lambda_function" "backend_lambda" {
   function_name    = "file-sharing-backend"
-  runtime          = "nodejs14.x"
+  runtime          = "nodejs18.x"  # Updated runtime
   handler          = "handler.handler"
   filename         = "${path.module}/app/backend.zip"
   source_code_hash = filebase64sha256("${path.module}/app/backend.zip")
@@ -170,7 +173,12 @@ resource "aws_api_gateway_integration" "lambda_integration" {
 
 # Deploy API Gateway
 resource "aws_api_gateway_deployment" "api_deployment" {
-  depends_on = [aws_api_gateway_integration.lambda_integration]
+  depends_on  = [aws_api_gateway_integration.lambda_integration]
   rest_api_id = aws_api_gateway_rest_api.backend_api.id
-  stage_name = "prod"
+}
+
+resource "aws_api_gateway_stage" "api_stage" {
+  stage_name    = "prod"
+  rest_api_id   = aws_api_gateway_rest_api.backend_api.id
+  deployment_id = aws_api_gateway_deployment.api_deployment.id
 }

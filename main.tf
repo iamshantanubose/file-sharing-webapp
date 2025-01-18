@@ -15,6 +15,17 @@ data "aws_vpc" "default" {
   default = true
 }
 
+# Generate SSH Key Pair
+resource "tls_private_key" "key_pair" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "aws_key_pair" "ec2_key_pair" {
+  key_name   = "file-sharing-key"
+  public_key = tls_private_key.key_pair.public_key_openssh
+}
+
 # S3 Bucket for Frontend Hosting
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket        = "file-sharing-home-bucket"
@@ -38,6 +49,14 @@ resource "aws_s3_bucket_public_access_block" "disable_block" {
   restrict_public_buckets = false
 }
 
+# Upload `index.html` to S3
+resource "aws_s3_object" "index_file" {
+  bucket       = aws_s3_bucket.frontend_bucket.id
+  key          = "index.html"
+  source       = "${path.module}/app/index.html"
+  content_type = "text/html"
+}
+
 # S3 Bucket Policy for Public Access
 resource "aws_s3_bucket_policy" "frontend_policy" {
   bucket = aws_s3_bucket.frontend_bucket.id
@@ -57,15 +76,7 @@ resource "aws_s3_bucket_policy" "frontend_policy" {
   depends_on = [aws_s3_bucket_public_access_block.disable_block]
 }
 
-# Upload `index.html` to S3
-resource "aws_s3_object" "index_file" {
-  bucket       = aws_s3_bucket.frontend_bucket.id
-  key          = "index.html"
-  source       = "${path.module}/app/index.html"
-  content_type = "text/html"
-}
-
-# EC2 Instance for Backend (Signaling Server)
+# EC2 Instance for Signaling Server
 resource "aws_instance" "file_sharing_instance" {
   ami                   = data.aws_ami.amazon_linux.id
   instance_type         = "t2.micro"

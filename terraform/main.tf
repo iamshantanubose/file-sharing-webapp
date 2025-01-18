@@ -4,6 +4,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
+
 # S3 Bucket for Frontend Hosting
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket        = "file-sharing-webapp-bucket-${random_string.bucket_suffix.result}"
@@ -97,15 +98,6 @@ resource "aws_s3_bucket_policy" "frontend_policy" {
   })
 }
 
-# CloudFront Distribution Invalidation
-resource "aws_cloudfront_distribution_invalidation" "invalidation" {
-  distribution_id = aws_cloudfront_distribution.frontend_distribution.id
-
-  paths = [
-    "/*"
-  ]
-}
-
 # Lambda Function for Backend
 resource "aws_lambda_function" "backend_lambda" {
   function_name    = "file-sharing-backend"
@@ -190,4 +182,20 @@ resource "aws_s3_object" "index_file" {
   key    = "index.html"
   source = "${path.module}/app/index.html"
   content_type = "text/html"
+}
+
+# Null Resource for CloudFront Invalidation
+resource "null_resource" "cloudfront_invalidation" {
+  triggers = {
+    distribution_id = aws_cloudfront_distribution.frontend_distribution.id
+    invalidation_id = timestamp()
+  }
+
+  provisioner "local-exec" {
+    command = <<EOT
+      aws cloudfront create-invalidation \
+        --distribution-id ${aws_cloudfront_distribution.frontend_distribution.id} \
+        --paths "/*"
+    EOT
+  }
 }

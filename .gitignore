@@ -1,0 +1,42 @@
+# Node.js dependencies
+node_modules/
+package-lock.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Terraform files
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+
+# Local environment variables
+.env
+.env.local
+*.env
+
+# AWS credentials
+.aws/
+credentials
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# GitHub workflows cache (optional)
+.github/workflows/.cache/
+
+# ZIP or archive files
+*.zip
+
+# Ignore local frontend build artifacts (if any)
+build/
+dist/
+
+# Ignore IDE-specific files
+.idea/
+.vscode/
+*.swp

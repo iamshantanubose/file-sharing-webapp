@@ -7,7 +7,6 @@ provider "aws" {
 # S3 Bucket for Frontend Hosting
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket        = "file-sharing-webapp-bucket-${random_string.bucket_suffix.result}"
-  acl           = "private"
   force_destroy = true
 
   tags = {
@@ -15,13 +14,19 @@ resource "aws_s3_bucket" "frontend_bucket" {
   }
 }
 
-# Random suffix for unique bucket name
+# ACL for S3 Bucket
+resource "aws_s3_bucket_acl" "frontend_bucket_acl" {
+  bucket = aws_s3_bucket.frontend_bucket.id
+  acl    = "private"
+}
+
+# Random String for Bucket Name Suffix
 resource "random_string" "bucket_suffix" {
   length  = 6
   upper   = false
   lower   = true
   special = false
-  number  = true
+  numeric = true
 }
 
 # CloudFront Distribution for Frontend

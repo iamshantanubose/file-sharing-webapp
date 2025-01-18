@@ -4,14 +4,6 @@ provider "aws" {
   region = "us-east-1"
 }
 
-terraform {
-  backend "s3" {
-    bucket         = "terraform-state-storage-shaan"
-    key            = "file-sharing-webapp/terraform.tfstate"
-    region         = "us-east-1"
-  }
-}
-
 # S3 Bucket for Frontend Hosting
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket        = "file-sharing-webapp-bucket-${random_string.bucket_suffix.result}"

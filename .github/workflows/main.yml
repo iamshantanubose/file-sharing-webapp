@@ -65,8 +65,9 @@ jobs:
 
     - name: Set S3 Website URL
       run: |
-        URL=$(terraform output -raw s3_website_url | sed 's/[^[:print:]]//g')
+        URL=$(terraform output s3_website_url | grep -Eo 'http[s]?://[^ ]+' || terraform output -raw s3_website_url)
         echo "WEBSITE_URL=$URL" >> $GITHUB_ENV
+    
 
     - name: Output Application Details
       run: |

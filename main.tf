@@ -10,6 +10,7 @@ terraform {
   }
 }
 
+# Default VPC
 data "aws_vpc" "default" {
   default = true
 }
@@ -30,15 +31,20 @@ resource "aws_s3_bucket" "frontend_bucket" {
   bucket        = "file-sharing-home-bucket"
   force_destroy = true
 
-  website {
-    index_document = "index.html"
-  }
-
   tags = {
     Name = "Home File Sharing Bucket"
   }
 }
 
+resource "aws_s3_bucket_website_configuration" "frontend_website" {
+  bucket = aws_s3_bucket.frontend_bucket.id
+
+  index_document {
+    suffix = "index.html"
+  }
+}
+
+# Disable Public Access Restrictions
 resource "aws_s3_bucket_public_access_block" "disable_block" {
   bucket                  = aws_s3_bucket.frontend_bucket.id
   block_public_acls       = false
@@ -47,6 +53,7 @@ resource "aws_s3_bucket_public_access_block" "disable_block" {
   restrict_public_buckets = false
 }
 
+# Dynamically Create `index.html`
 resource "local_file" "index_html" {
   filename = "${path.module}/app/index.html"
   content  = <<-HTML
@@ -62,6 +69,7 @@ resource "local_file" "index_html" {
   HTML
 }
 
+# Upload `index.html` to S3
 resource "aws_s3_object" "index_file" {
   bucket       = aws_s3_bucket.frontend_bucket.id
   key          = "index.html"
@@ -69,6 +77,7 @@ resource "aws_s3_object" "index_file" {
   content_type = "text/html"
 }
 
+# S3 Bucket Policy for Public Access
 resource "aws_s3_bucket_policy" "frontend_policy" {
   bucket = aws_s3_bucket.frontend_bucket.id
 
@@ -91,8 +100,8 @@ resource "aws_s3_bucket_policy" "frontend_policy" {
 resource "aws_instance" "file_sharing_instance" {
   ami                   = data.aws_ami.amazon_linux.id
   instance_type         = "t2.micro"
-  vpc_security_group_ids = [aws_security_group.file_sharing_sg.id]
   key_name              = aws_key_pair.ec2_key_pair.key_name
+  vpc_security_group_ids = [aws_security_group.file_sharing_sg.id]
 
   user_data = <<-EOF
               #!/bin/bash
@@ -104,12 +113,15 @@ resource "aws_instance" "file_sharing_instance" {
               cat << EOM > app.js
               const express = require('express');
               const app = express();
-              const PORT = 3000;
               app.use(express.static('/app'));
-              app.listen(PORT, () => console.log('App running on port', PORT));
+              app.listen(3000, () => console.log('App running on port 3000'));
               EOM
               node app.js &
   EOF
+
+  tags = {
+    Name = "Home File Sharing Instance"
+  }
 }
 
 # Security Group for EC2
@@ -140,6 +152,7 @@ resource "aws_security_group" "file_sharing_sg" {
   }
 }
 
+# Dynamic Amazon Linux AMI Lookup
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
@@ -151,7 +164,7 @@ data "aws_ami" "amazon_linux" {
 }
 
 output "s3_website_url" {
-  value = aws_s3_bucket_website_configuration.frontend_bucket.website_endpoint
+  value = aws_s3_bucket_website_configuration.frontend_website.website_endpoint
 }
 
 output "ec2_public_ip" {

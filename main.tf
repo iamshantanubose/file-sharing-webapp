@@ -83,10 +83,10 @@ data "aws_ami" "amazon_linux" {
 }
 
 resource "aws_instance" "file_sharing_instance" {
-  ami           = data.aws_ami.amazon_linux.id
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.file_sharing_subnet.id
-  security_groups = [aws_security_group.file_sharing_sg.name]
+  ami                = data.aws_ami.amazon_linux.id
+  instance_type      = "t2.micro"
+  subnet_id          = aws_subnet.file_sharing_subnet.id
+  security_group_ids = [aws_security_group.file_sharing_sg.id]
 
   user_data = <<-EOF
               #!/bin/bash

@@ -14,7 +14,7 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    # Step 2: Configure AWS credentials
+    # Step 2: Configure AWS Credentials
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
@@ -22,11 +22,12 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    # Step 3: Install dependencies for Lambda
-    - name: Install Dependencies
+    # Step 3: Install dependencies and package Lambda
+    - name: Install Dependencies and Package Lambda
       run: |
+        mkdir -p terraform/app          # Create the directory if it doesn't exist
         cd app
-        npm install
+        npm install                     # Install Lambda dependencies
         zip -r backend.zip handler.js node_modules
         mv backend.zip ../terraform/app/backend.zip
 

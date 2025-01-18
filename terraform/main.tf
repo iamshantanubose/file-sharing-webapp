@@ -98,6 +98,7 @@ resource "aws_s3_bucket_policy" "frontend_policy" {
   })
 }
 
+
 # Lambda Function for Backend
 resource "aws_lambda_function" "backend_lambda" {
   function_name    = "file-sharing-backend"
@@ -174,4 +175,11 @@ resource "aws_api_gateway_stage" "api_stage" {
   stage_name    = "prod"
   rest_api_id   = aws_api_gateway_rest_api.backend_api.id
   deployment_id = aws_api_gateway_deployment.api_deployment.id
+}
+
+resource "aws_s3_object" "index_file" {
+  bucket = aws_s3_bucket.frontend_bucket.id
+  key    = "index.html"
+  source = "${path.module}/app/index.html"
+  content_type = "text/html"
 }

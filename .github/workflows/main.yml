@@ -64,11 +64,13 @@ jobs:
       run: terraform apply -auto-approve
 
     - name: Set S3 Website URL
-      run: echo "WEBSITE_URL=$(terraform output -raw s3_website_url | sed 's/[^[:print:]]//g')" >> $GITHUB_ENV
+      run: |
+        URL=$(terraform output -raw s3_website_url | sed 's/[^[:print:]]//g')
+        echo "WEBSITE_URL=$URL" >> $GITHUB_ENV
 
     - name: Output Application Details
       run: |
-        echo "Deployment Successful!"
+        echo "Deployment Successful! Website URL: ${{ env.WEBSITE_URL }}"
 
   verify:
     name: Verify Website Accessibility

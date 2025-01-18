@@ -64,7 +64,7 @@ jobs:
       run: terraform apply -auto-approve
 
     - name: Set S3 Website URL
-      run: echo "WEBSITE_URL=$(terraform output -raw s3_website_url)" >> $GITHUB_ENV
+      run: echo "WEBSITE_URL=$(terraform output -raw s3_website_url | sed 's/[^[:print:]]//g')" >> $GITHUB_ENV
 
     - name: Output Application Details
       run: |

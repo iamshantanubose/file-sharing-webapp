@@ -34,7 +34,7 @@ resource "aws_s3_bucket_website_configuration" "frontend_website" {
 resource "aws_s3_object" "index_file" {
   bucket       = aws_s3_bucket.frontend_bucket.id
   key          = "index.html"
-  source       = "${path.module}/../app/index.html"
+  source       = "${path.module}/app/index.html"
   content_type = "text/html"
 }
 

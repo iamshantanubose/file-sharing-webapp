@@ -7,6 +7,17 @@ data "aws_vpc" "default" {
   default = true
 }
 
+# Generate SSH Key Pair
+resource "tls_private_key" "key_pair" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "aws_key_pair" "file_sharing_key" {
+  key_name   = "file-sharing-key"
+  public_key = tls_private_key.key_pair.public_key_openssh
+}
+
 # S3 Bucket for Hosting Frontend
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket        = "file-sharing-home-bucket"
@@ -30,12 +41,41 @@ resource "aws_s3_bucket_website_configuration" "frontend_website" {
   }
 }
 
-# Upload Static HTML to S3
+# Disable Public Access Restrictions
+resource "aws_s3_bucket_public_access_block" "disable_block" {
+  bucket                  = aws_s3_bucket.frontend_bucket.id
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+# Upload `index.html` to S3
 resource "aws_s3_object" "index_file" {
   bucket       = aws_s3_bucket.frontend_bucket.id
   key          = "index.html"
   source       = "${path.module}/app/index.html"
   content_type = "text/html"
+}
+
+# S3 Bucket Policy for Public Access
+resource "aws_s3_bucket_policy" "frontend_policy" {
+  bucket = aws_s3_bucket.frontend_bucket.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject",
+        Effect    = "Allow",
+        Principal = "*",
+        Action    = "s3:GetObject",
+        Resource  = "${aws_s3_bucket.frontend_bucket.arn}/*"
+      }
+    ]
+  })
+
+  depends_on = [aws_s3_bucket_public_access_block.disable_block]
 }
 
 # EC2 Instance for Signaling Server
@@ -99,7 +139,7 @@ resource "aws_instance" "signaling_server" {
   EOF
 
   tags = {
-    Name = "Signaling Server"
+    Name = "File Sharing Signaling Server"
   }
 }
 
@@ -134,7 +174,7 @@ resource "aws_security_group" "signaling_server_sg" {
 # Key Pair for EC2
 resource "aws_key_pair" "file_sharing_key" {
   key_name   = "file-sharing-key"
-  public_key = tls_private_key.key.public_key_openssh
+  public_key = tls_private_key.key_pair.public_key_openssh
 }
 
 # Generate SSH Key

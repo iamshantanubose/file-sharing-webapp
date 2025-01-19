@@ -71,7 +71,8 @@ jobs:
         echo "::set-output name=website_url::http://$URL"
 
     - name: Output Application Details
-      run: echo "Deployment Successful! Website URL: ${{ steps.set_s3_url.outputs.website_url }}"
+      run: |
+        echo "Deployment Successful! Website URL: ${{ steps.set_s3_url.outputs.website_url }}"
 
   verify:
     name: Verify Website Accessibility

@@ -171,12 +171,6 @@ resource "aws_security_group" "signaling_server_sg" {
   }
 }
 
-# Key Pair for EC2
-resource "aws_key_pair" "file_sharing_key" {
-  key_name   = "file-sharing-key"
-  public_key = tls_private_key.key_pair.public_key_openssh
-}
-
 # Generate SSH Key
 resource "tls_private_key" "key" {
   algorithm = "RSA"

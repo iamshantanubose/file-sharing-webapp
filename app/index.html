@@ -1,81 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>P2P File Sharing</title>
+    <title>File Sharing App</title>
+    <script>
+        let signalingServer;
+        let devices = [];
+        let peerConnection;
+
+        const configuration = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+
+        function startDiscovery() {
+            signalingServer = new WebSocket("ws://<EC2_PUBLIC_IP>:8080");
+
+            signalingServer.onopen = () => {
+                console.log("Connected to the signaling server");
+
+                signalingServer.send(
+                    JSON.stringify({ type: "register", id: generateUniqueID(), name: "Device A" })
+                );
+            };
+
+            signalingServer.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+
+                if (message.type === "deviceList") {
+                    devices = message.devices;
+                    updateDeviceList();
+                }
+            };
+        }
+
+        function updateDeviceList() {
+            const deviceList = document.getElementById("deviceList");
+            deviceList.innerHTML = "";
+            devices.forEach((device) => {
+                const li = document.createElement("li");
+                li.innerText = `${device.name} (${device.address})`;
+                li.onclick = () => initiateFileTransfer(device);
+                deviceList.appendChild(li);
+            });
+        }
+
+        function initiateFileTransfer(device) {
+            alert(`Initiating file transfer to ${device.name}`);
+        }
+
+        function generateUniqueID() {
+            return Math.random().toString(36).substr(2, 9);
+        }
+    </script>
 </head>
 <body>
-  <h1>P2P File Sharing App</h1>
-  <label for="fileInput">Choose a file to send:</label>
-  <input type="file" id="fileInput">
-  <button id="sendFileButton">Send File</button>
-
-  <h2>Incoming File</h2>
-  <a id="downloadLink" style="display: none;">Download Received File</a>
-
-  <script>
-    const signalingServerUrl = "ws://<EC2_PUBLIC_IP>:8080";
-    const fileInput = document.getElementById('fileInput');
-    const sendFileButton = document.getElementById('sendFileButton');
-    const downloadLink = document.getElementById('downloadLink');
-
-    const peerConnection = new RTCPeerConnection();
-    let dataChannel;
-
-    // Connect to signaling server
-    const signalingSocket = new WebSocket(signalingServerUrl);
-    signalingSocket.onmessage = async (event) => {
-      const message = JSON.parse(event.data);
-
-      if (message.offer) {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(message.offer));
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        signalingSocket.send(JSON.stringify({ answer }));
-      } else if (message.answer) {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(message.answer));
-      } else if (message.iceCandidate) {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(message.iceCandidate));
-      }
-    };
-
-    // Send ICE candidates to signaling server
-    peerConnection.onicecandidate = (event) => {
-      if (event.candidate) {
-        signalingSocket.send(JSON.stringify({ iceCandidate: event.candidate }));
-      }
-    };
-
-    // Handle incoming data channel
-    peerConnection.ondatachannel = (event) => {
-      const receiveChannel = event.channel;
-      receiveChannel.onmessage = (e) => {
-        const arrayBuffer = e.data;
-        const blob = new Blob([arrayBuffer]);
-        downloadLink.href = URL.createObjectURL(blob);
-        downloadLink.download = "received-file";
-        downloadLink.style.display = "block";
-      };
-    };
-
-    // Create data channel for file transfer
-    sendFileButton.addEventListener('click', async () => {
-      dataChannel = peerConnection.createDataChannel("fileTransfer");
-      const file = fileInput.files[0];
-
-      dataChannel.onopen = () => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          dataChannel.send(e.target.result);
-          alert("File sent!");
-        };
-        reader.readAsArrayBuffer(file);
-      };
-
-      // Create and send WebRTC offer
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
-      signalingSocket.send(JSON.stringify({ offer }));
-    });
-  </script>
+    <h1>Welcome to the File Sharing App</h1>
+    <button onclick="startDiscovery()">Discover Devices</button>
+    <ul id="deviceList"></ul>
 </body>
 </html>

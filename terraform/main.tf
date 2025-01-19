@@ -26,7 +26,7 @@ resource "aws_key_pair" "ec2_key_pair" {
   public_key = tls_private_key.key_pair.public_key_openssh
 }
 
-# S3 Bucket for Frontend Hosting
+# S3 Bucket for Hosting Frontend
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket        = "file-sharing-home-bucket"
   force_destroy = true
@@ -91,21 +91,50 @@ resource "aws_instance" "file_sharing_instance" {
               mkdir -p /app
               cd /app
               cat << EOM > signaling_server.js
-              const WebSocket = require('ws');
-              const wss = new WebSocket.Server({ port: 8080 });
-              console.log('WebSocket signaling server running on ws://0.0.0.0:8080');
+              const WebSocket = require("ws");
 
-              wss.on('connection', (ws) => {
-                ws.on('message', (message) => {
-                  console.log('Received:', message);
-                  // Broadcast the message to all connected clients
-                  wss.clients.forEach((client) => {
-                    if (client !== ws && client.readyState === WebSocket.OPEN) {
-                      client.send(message);
-                    }
+              const server = new WebSocket.Server({ port: 8080 });
+              let connectedDevices = [];
+
+              server.on("connection", (socket) => {
+                  console.log("New device connected");
+
+                  socket.on("message", (data) => {
+                      const message = JSON.parse(data);
+                      if (message.type === "register") {
+                          connectedDevices.push({
+                              id: message.id,
+                              name: message.name,
+                              address: socket._socket.remoteAddress,
+                              socket: socket,
+                          });
+                          broadcastDeviceList();
+                      }
+
+                      if (message.type === "disconnect") {
+                          connectedDevices = connectedDevices.filter((d) => d.id !== message.id);
+                          broadcastDeviceList();
+                      }
                   });
-                });
+
+                  socket.on("close", () => {
+                      connectedDevices = connectedDevices.filter((d) => d.socket !== socket);
+                      broadcastDeviceList();
+                  });
               });
+
+              function broadcastDeviceList() {
+                  const deviceList = connectedDevices.map((device) => ({
+                      id: device.id,
+                      name: device.name,
+                      address: device.address,
+                  }));
+                  connectedDevices.forEach((device) => {
+                      device.socket.send(JSON.stringify({ type: "deviceList", devices: deviceList }));
+                  });
+              }
+
+              console.log("Signaling server is running on ws://0.0.0.0:8080");
               EOM
               node signaling_server.js &
   EOF
@@ -118,7 +147,7 @@ resource "aws_instance" "file_sharing_instance" {
 # Security Group for EC2
 resource "aws_security_group" "file_sharing_sg" {
   name        = "file-sharing-sg"
-  description = "Allow HTTP and SSH access"
+  description = "Allow HTTP and WebSocket access"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {

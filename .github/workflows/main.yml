@@ -37,3 +37,7 @@ jobs:
     - name: Output Deployment Details
       run: |
         echo "Deployment Complete! Check Terraform logs for output details."
+
+    - name: Terraform Destroy
+      working-directory: ./terraform # Updated to match the new folder structure
+      run: terraform destroy -auto-approve

@@ -63,16 +63,11 @@ jobs:
     - name: Terraform Apply
       run: terraform apply -auto-approve
 
-    - name: Set S3 Website URL
-      id: set_s3_url
+    - name: Output S3 Website URL
+      id: s3_url
       run: |
-        terraform output -raw s3_website_url > s3_url.txt
-        URL=$(cat s3_url.txt | tr -d '\n' | tr -d '\r')
-        echo "::set-output name=website_url::http://$URL"
-
-    - name: Output Application Details
-      run: |
-        echo "Deployment Successful! Website URL: ${{ steps.set_s3_url.outputs.website_url }}"
+        echo "S3_WEBSITE_URL=$(terraform output -raw s3_website_url)" >> $GITHUB_ENV
+        echo "S3 Website URL: ${{ env.S3_WEBSITE_URL }}"
 
   verify:
     name: Verify Website Accessibility
@@ -92,4 +87,4 @@ jobs:
       run: |
         node test_website.js
       env:
-        WEBSITE_URL: ${{ steps.set_s3_url.outputs.website_url }}
+        WEBSITE_URL: ${{ env.S3_WEBSITE_URL }}

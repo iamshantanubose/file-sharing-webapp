@@ -33,6 +33,7 @@ resource "aws_s3_bucket" "frontend_bucket" {
 
   website {
     index_document = "index.html"
+    error_document = "error.html"
   }
 
   tags = {
@@ -108,6 +109,10 @@ resource "aws_instance" "file_sharing_instance" {
               EOM
               node signaling_server.js &
   EOF
+
+  tags = {
+    Name = "File Sharing Signaling Server"
+  }
 }
 
 # Security Group for EC2

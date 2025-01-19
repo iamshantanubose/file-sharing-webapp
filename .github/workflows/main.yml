@@ -64,16 +64,17 @@ jobs:
       run: terraform apply -auto-approve
 
     - name: Extract S3 Website URL
+      id: extract_s3_url
       run: |
         echo "Extracting the S3 Website URL..."
-        terraform output -raw s3_website_url > s3_url.txt
-        cat s3_url.txt
-        echo "WEBSITE_URL=http://$(cat s3_url.txt)" >> $GITHUB_ENV
+        URL=$(terraform output -raw s3_website_url | sed 's/::.*//')
+        echo "Website URL: http://$URL"
+        echo "::set-output name=website_url::http://$URL"
 
     - name: Output Application Details
       run: |
         echo "Deployment Successful!"
-        echo "Website URL: ${{ env.WEBSITE_URL }}"
+        echo "Website URL: ${{ steps.extract_s3_url.outputs.website_url }}"
 
   verify:
     name: Verify Website Accessibility
@@ -93,4 +94,4 @@ jobs:
       run: |
         node test_website.js
       env:
-        WEBSITE_URL: ${{ env.WEBSITE_URL }}
+        WEBSITE_URL: ${{ steps.extract_s3_url.outputs.website_url }}

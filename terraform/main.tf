@@ -1,3 +1,4 @@
+
 name: CI/CD Pipeline for File Sharing App
 
 on:
@@ -45,16 +46,16 @@ jobs:
         terraform_version: 1.4.6
 
     - name: Terraform Init
-      working-directory: ./terraform # Ensure this points to the directory containing your Terraform files
+      working-directory: ./terraform
       run: terraform init
 
     - name: Terraform Apply
-      working-directory: ./terraform # Ensure this points to the directory containing your Terraform files
+      working-directory: ./terraform
       run: terraform apply -auto-approve
 
     - name: Extract Outputs
       id: extract_outputs
-      working-directory: ./terraform # Ensure this points to the directory containing your Terraform files
+      working-directory: ./terraform
       run: |
         echo "Extracting Terraform outputs..."
         S3_WEBSITE_URL=$(terraform output -raw s3_website_url)

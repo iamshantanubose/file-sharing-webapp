@@ -65,7 +65,8 @@ jobs:
 
     - name: Set S3 Website URL
       run: |
-        echo "WEBSITE_URL=http://$(terraform output -raw s3_website_url)" >> $GITHUB_ENV
+        CLEAN_URL=$(terraform output -raw s3_website_url | awk '{print $1}')
+        echo "WEBSITE_URL=http://$CLEAN_URL" >> $GITHUB_ENV
 
     - name: Output Application Details
       run: |

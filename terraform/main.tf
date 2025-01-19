@@ -2,7 +2,12 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# S3 Bucket for Frontend Hosting
+# Default VPC
+data "aws_vpc" "default" {
+  default = true
+}
+
+# S3 Bucket for Hosting Frontend
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket        = "file-sharing-home-bucket"
   force_destroy = true
@@ -107,6 +112,13 @@ resource "aws_security_group" "signaling_server_sg" {
   ingress {
     from_port   = 8080
     to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }

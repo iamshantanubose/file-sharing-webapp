@@ -63,15 +63,22 @@ jobs:
     - name: Terraform Apply
       run: terraform apply -auto-approve
 
-    - name: Save Terraform Output to File
-      run: terraform output -raw s3_website_url > s3_website_url.txt
+    - name: Debug Terraform Output
+      run: |
+        echo "Debugging Terraform Output"
+        terraform output -raw s3_website_url > s3_website_url.txt
+        cat s3_website_url.txt
 
     - name: Set S3 Website URL
-      run: echo "WEBSITE_URL=$(cat s3_website_url.txt)" >> $GITHUB_ENV
+      run: |
+        echo "Extracting S3 website URL..."
+        WEBSITE_URL=$(terraform output -raw s3_website_url | grep -Eo '^.*')
+        echo "WEBSITE_URL=$WEBSITE_URL" >> $GITHUB_ENV
+        echo "S3 Website URL is: $WEBSITE_URL"
 
     - name: Output Application Details
       run: |
-        echo "Deployment Successful! Website URL: ${{ env.WEBSITE_URL }}"
+        echo "Deployment Successful!"
 
   verify:
     name: Verify Website Accessibility

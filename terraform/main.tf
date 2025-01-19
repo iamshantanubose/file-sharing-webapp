@@ -91,9 +91,7 @@ resource "aws_instance" "signaling_server" {
               yum install -y nodejs
               mkdir -p /app
               cd /app
-              cat << 'EOM' > signaling_server.js
-              $(cat ${path.module}/app/signaling_server.js)
-              EOM
+              cp /terraform/app/signaling_server.js .
               node signaling_server.js &
   EOF
 

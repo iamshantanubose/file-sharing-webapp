@@ -10,7 +10,7 @@
         const configuration = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
         function startDiscovery() {
-            signalingServer = new WebSocket("ws://<EC2_PUBLIC_IP>:8080");
+            signalingServer = new WebSocket("ws://34.228.15.54:8080");
 
             signalingServer.onopen = () => {
                 console.log("Connected to the signaling server");

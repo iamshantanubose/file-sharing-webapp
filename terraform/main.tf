@@ -128,12 +128,6 @@ resource "aws_security_group" "signaling_server_sg" {
   }
 }
 
-# Generate SSH Key
-resource "tls_private_key" "key" {
-  algorithm = "RSA"
-  rsa_bits  = 2048
-}
-
 # Dynamic Amazon Linux AMI Lookup
 data "aws_ami" "amazon_linux" {
   most_recent = true

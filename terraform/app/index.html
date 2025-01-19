@@ -1,58 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>File Sharing App</title>
-    <script>
-        let signalingServer;
-        let devices = [];
-        let peerConnection;
-
-        const configuration = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
-
-        function startDiscovery() {
-            signalingServer = new WebSocket("ws://34.228.15.54:8080");
-
-            signalingServer.onopen = () => {
-                console.log("Connected to the signaling server");
-
-                signalingServer.send(
-                    JSON.stringify({ type: "register", id: generateUniqueID(), name: "Device A" })
-                );
-            };
-
-            signalingServer.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-
-                if (message.type === "deviceList") {
-                    devices = message.devices;
-                    updateDeviceList();
-                }
-            };
-        }
-
-        function updateDeviceList() {
-            const deviceList = document.getElementById("deviceList");
-            deviceList.innerHTML = "";
-            devices.forEach((device) => {
-                const li = document.createElement("li");
-                li.innerText = `${device.name} (${device.address})`;
-                li.onclick = () => initiateFileTransfer(device);
-                deviceList.appendChild(li);
-            });
-        }
-
-        function initiateFileTransfer(device) {
-            alert(`Initiating file transfer to ${device.name}`);
-        }
-
-        function generateUniqueID() {
-            return Math.random().toString(36).substr(2, 9);
-        }
-    </script>
+  <title>File Sharing App</title>
 </head>
 <body>
-    <h1>Welcome to the File Sharing App</h1>
-    <button onclick="startDiscovery()">Discover Devices</button>
-    <ul id="deviceList"></ul>
+  <h1>Welcome to the File Sharing App</h1>
+  <button id="discover-devices">Discover Devices</button>
+  <ul id="device-list"></ul>
+
+  <script>
+    const signalingServer = "ws://<SIGNALING_SERVER_IP>:8080"; // Replace with signaling server's public IP
+    const deviceId = Math.random().toString(36).substr(2, 9);
+    const deviceName = `Device-${deviceId}`;
+    let socket;
+
+    document.getElementById("discover-devices").addEventListener("click", () => {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        socket = new WebSocket(signalingServer);
+
+        socket.onopen = () => {
+          socket.send(JSON.stringify({ type: "register", id: deviceId, name: deviceName }));
+        };
+
+        socket.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          if (data.type === "deviceList") {
+            const deviceListElement = document.getElementById("device-list");
+            deviceListElement.innerHTML = "";
+            data.devices.forEach((device) => {
+              const li = document.createElement("li");
+              li.textContent = device.name;
+              deviceListElement.appendChild(li);
+            });
+          }
+        };
+      }
+    });
+  </script>
 </body>
 </html>

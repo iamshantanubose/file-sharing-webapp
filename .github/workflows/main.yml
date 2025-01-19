@@ -63,10 +63,12 @@ jobs:
     - name: Terraform Apply
       run: terraform apply -auto-approve
 
-    - name: Set S3 Website URL
+    - name: Extract S3 Website URL
       run: |
-        CLEAN_URL=$(terraform output -raw s3_website_url | awk '{print $1}')
-        echo "WEBSITE_URL=http://$CLEAN_URL" >> $GITHUB_ENV
+        echo "Extracting the S3 Website URL..."
+        terraform output -raw s3_website_url > s3_url.txt
+        cat s3_url.txt
+        echo "WEBSITE_URL=http://$(cat s3_url.txt)" >> $GITHUB_ENV
 
     - name: Output Application Details
       run: |
